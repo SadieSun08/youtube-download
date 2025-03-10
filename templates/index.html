@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube 视频下载器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        .loading.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 加载动画 -->
+    <div class="loading" id="loading">
+        <div class="flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <span class="ml-3 text-blue-500">下载中...</span>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- 标题部分 -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">YouTube 视频下载器</h1>
+            <p class="text-gray-600">输入 YouTube 视频链接，轻松下载高质量视频</p>
+        </div>
+
+        <!-- 下载表单 -->
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="downloadForm" class="space-y-4">
+                <div>
+                    <input type="url" id="url" name="url" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="请输入 YouTube 视频链接">
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center justify-center">
+                    <span>开始下载</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 下载列表 -->
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">已下载视频</h2>
+            <div class="space-y-4" id="videoList">
+                {% for video in videos %}
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">{{ video.title }}</h3>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span>作者: {{ video.author }}</span> |
+                            <span>时长: {{ video.duration }}</span> |
+                            <span>大小: {{ video.file_size }}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">{{ video.description }}</p>
+                    <video controls class="w-full rounded-lg mb-4">
+                        <source src="/static/{{ video.local_path }}" type="video/mp4">
+                        您的浏览器不支持 HTML5 视频播放。
+                    </video>
+                    <div class="text-sm text-gray-500">
+                        下载时间: {{ video.download_date }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('downloadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loading = document.getElementById('loading');
+            const form = e.target;
+            const url = form.url.value;
+
+            try {
+                loading.classList.add('active');
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `url=${encodeURIComponent(url)}`
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('下载失败: ' + data.message);
+                }
+            } catch (error) {
+                alert('发生错误: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html> 
